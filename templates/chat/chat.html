@@ -1,0 +1,174 @@
+{% extends 'chat/base.html' %}
+
+{% block content %}
+<div class="row">
+    <!-- User List -->
+    <div class="col-md-3" id="userList">
+        <div class="card">
+            <div class="card-header">
+                <button class="btn btn-link" type="button" data-bs-toggle="collapse" data-bs-target="#userListCollapse">
+                    Users
+                </button>
+            </div>
+            <div class="collapse show" id="userListCollapse">
+                <div class="card-body">
+                    <div class="list-group">
+                        {% for user in users %}
+                            <button class="list-group-item list-group-item-action user-select" 
+                                    data-username="{{ user.username }}">
+                                {{ user.username }}
+                            </button>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chat Area -->
+    <div class="col-md-9">
+        <div class="card">
+            <div class="card-header" id="chatHeader">
+                Select a user to start chatting
+            </div>
+            <div class="card-body" id="chatMessages" style="height: 400px; overflow-y: auto;">
+                <!-- Messages will be displayed here -->
+            </div>
+            <div class="card-footer">
+                <div class="input-group">
+                    <input type="text" class="form-control" id="messageInput" placeholder="Type your message...">
+                    <button class="btn btn-primary" id="sendButton">Send</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let chatSocket = null;
+    let selectedUser = null;
+    let isConnecting = false;
+    
+    function connectWebSocket(roomName) {
+        if (isConnecting) return;
+        isConnecting = true;
+    
+        chatSocket = new WebSocket(
+            'ws://' + window.location.host + '/ws/chat/' + roomName + '/'
+        );
+    
+        chatSocket.onopen = function(e) {
+            console.log('WebSocket connected successfully');
+            isConnecting = false;
+            // Load old messages immediately after the WebSocket opens
+            chatSocket.send(JSON.stringify({
+                'action': 'load_messages',
+                'selected_user': selectedUser
+            }));
+            // Load old messages immediately after the WebSocket opens
+            document.getElementById('chatMessages').innerHTML = ''; // Clear chat
+        };
+    
+        chatSocket.onmessage = function(e) {
+            const data = JSON.parse(e.data);
+            console.log("Received message:", data);
+            if (data.action === 'load_messages') {
+                const messages = data.messages;
+                const chatMessagesDiv = document.getElementById('chatMessages');
+                chatMessagesDiv.innerHTML = ''; // Clear old messages
+
+                messages.forEach(msg => {
+                    const messageDiv = document.createElement('div');
+                    messageDiv.className = 'message ' + (msg.sender__username === '{{ request.user.username }}' ? 'sent' : 'received');
+                    messageDiv.textContent = `${msg.sender__username}: ${msg.message}`;
+                    chatMessagesDiv.appendChild(messageDiv);
+                });
+
+                // Load old messages immediately after the WebSocket opens
+                chatSocket.send(JSON.stringify({
+                    'action': 'load_messages',
+                    'selected_user': selectedUser
+                }));
+
+                // Scroll to the bottom
+                chatMessagesDiv.scrollTop = chatMessagesDiv.scrollHeight;
+
+            } else if (data.action === 'chat_message') {
+
+                // Load old messages immediately after the WebSocket opens
+                chatSocket.send(JSON.stringify({
+                    'action': 'load_messages',
+                    'selected_user': selectedUser
+                }));
+
+                // Handle new messages
+                const messageDiv = document.createElement('div');
+                messageDiv.className = 'message ' + (data.sender === '{{ request.user.username }}' ? 'sent' : 'received');
+                messageDiv.textContent = `${data.sender}: ${data.message}`;
+                document.querySelector('#chatMessages').appendChild(messageDiv);
+                messageDiv.scrollIntoView();
+            }
+        };
+    
+        chatSocket.onclose = function(e) {
+            console.log('WebSocket closed. Code:', e.code, 'Reason:', e.reason);
+            isConnecting = false;
+        };
+    
+        chatSocket.onerror = function(e) {
+            console.error('WebSocket error:', e);
+            isConnecting = false;
+        };
+    }
+    
+    document.querySelectorAll('.user-select').forEach(button => {
+        button.addEventListener('click', function() {
+            // If we have an existing connection, close it properly
+            if (chatSocket && chatSocket.readyState <= WebSocket.OPEN) {
+                chatSocket.close();
+            }
+    
+            selectedUser = this.dataset.username;
+            document.getElementById('chatHeader').textContent = `Chat with ${selectedUser}`;
+            
+            const roomName = [selectedUser, '{{ request.user.username }}'].sort().join('_');
+            connectWebSocket(roomName);
+        });
+    });
+    
+    function sendMessage() {
+        
+        if (!selectedUser) {
+            alert('Please select a user to chat with.');
+            return;
+        }
+    
+        const messageInput = document.querySelector('#messageInput');
+        const message = messageInput.value.trim();
+        console.log("Inside of send message:", message)
+        
+        if (message && chatSocket && chatSocket.readyState === WebSocket.OPEN) {
+            chatSocket.send(JSON.stringify({
+                'action': 'send_message',
+                'message': message,
+                'sender': '{{ request.user.username }}',
+                'receiver': selectedUser
+            }));
+            messageInput.value = '';
+        } else if (!chatSocket || chatSocket.readyState !== WebSocket.OPEN) {
+            alert('Chat connection is not open. Please try again.');
+        }
+    }
+    
+    document.querySelector('#sendButton').onclick = sendMessage;
+    
+    document.querySelector('#messageInput').onkeyup = function(e) {
+        if (e.keyCode === 13) {  // enter key
+            sendMessage();
+        }
+    };
+    </script>
+{% endblock %}
