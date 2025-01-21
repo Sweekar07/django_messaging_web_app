@@ -55,9 +55,11 @@
     function connectWebSocket(roomName) {
         if (isConnecting) return;
         isConnecting = true;
-    
+        
+        const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+        console.log("Connecting to WebSocket with protocol:", window.location.protocol )
         chatSocket = new WebSocket(
-            'ws://' + window.location.host + '/ws/chat/' + roomName + '/'
+            protocol + window.location.host + '/ws/chat/' + roomName + '/'
         );
     
         chatSocket.onopen = function(e) {

@@ -5,6 +5,7 @@ __pycache__/
 
 # Environment variables
 .env
+*.docx
 
 # Django database
 db.sqlite3
