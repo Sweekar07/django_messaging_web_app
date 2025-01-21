@@ -56,11 +56,36 @@
         if (isConnecting) return;
         isConnecting = true;
         
-        const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
-        console.log("Connecting to WebSocket with protocol:", window.location.protocol )
-        chatSocket = new WebSocket(
-            protocol + window.location.host + '/ws/chat/' + roomName + '/'
-        );
+        // Force WSS for production
+        const wsProtocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+        const wsUrl = wsProtocol + window.location.host + '/ws/chat/' + roomName + '/';
+        console.log("Attempting to connect to:", wsUrl);
+
+        // chatSocket = new WebSocket(
+        //     protocol + window.location.host + '/ws/chat/' + roomName + '/'
+        // );
+
+        try {
+            chatSocket = new WebSocket(wsUrl);
+            
+            chatSocket.onopen = function(e) {
+                console.log('WebSocket connected successfully');
+                isConnecting = false;
+                // Your existing onopen code...
+            };
+            
+            // Add error handling
+            chatSocket.onerror = function(e) {
+                console.error('WebSocket error:', e);
+                isConnecting = false;
+                alert('Unable to establish WebSocket connection. Please check your internet connection.');
+            };
+            
+        } catch (error) {
+            console.error('Error creating WebSocket:', error);
+            isConnecting = false;
+            alert('Error creating WebSocket connection');
+        }
     
         chatSocket.onopen = function(e) {
             console.log('WebSocket connected successfully');
