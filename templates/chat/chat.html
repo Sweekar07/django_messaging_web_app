@@ -1,9 +1,9 @@
 {% extends 'chat/base.html' %}
 
-{% block content %}
-<div class="row">
+<!-- {% block content %} -->
+<!-- <div class="row"> -->
     <!-- User List -->
-    <div class="col-md-3" id="userList">
+    <!-- <div class="col-md-3" id="userList">
         <div class="card">
             <div class="card-header">
                 <button class="btn btn-link" type="button" data-bs-toggle="collapse" data-bs-target="#userListCollapse">
@@ -23,17 +23,17 @@
                 </div>
             </div>
         </div>
-    </div>
+    </div> -->
 
     <!-- Chat Area -->
-    <div class="col-md-9">
+    <!-- <div class="col-md-9">
         <div class="card">
             <div class="card-header" id="chatHeader">
                 Select a user to start chatting
             </div>
-            <div class="card-body" id="chatMessages" style="height: 400px; overflow-y: auto;">
+            <div class="card-body" id="chatMessages" style="height: 400px; overflow-y: auto;"> -->
                 <!-- Messages will be displayed here -->
-            </div>
+            <!-- </div>
             <div class="card-footer">
                 <div class="input-group">
                     <input type="text" class="form-control" id="messageInput" placeholder="Type your message...">
@@ -42,8 +42,61 @@
             </div>
         </div>
     </div>
-</div>
+</div> -->
 
+<!-- {% endblock %} -->
+
+{% block left_menu %}
+<div class="card">
+    <div class="card-header">
+        <button class="btn btn-link" type="button" data-bs-toggle="collapse" data-bs-target="#userListCollapseLeft">
+            Avaliable Users to Chat
+        </button>
+    </div>
+    <div class="collapse show" id="userListCollapseLeft">
+        <div class="card-body">
+            <div class="list-group">
+                {% for user in users %}
+                    <button class="list-group-item list-group-item-action user-select"
+                            data-username="{{ user.username }}">
+                        {{ user.username }}
+                    </button>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block main_content %}
+<div class="card">
+    <div class="card-header" id="chatHeader">
+        Select a user to start chatting
+    </div>
+    <div class="card-body" id="chatMessages" style="height: 400px; overflow-y: auto;">
+        <!-- Messages will be displayed here -->
+    </div>
+    <div class="card-footer">
+        <div class="input-group">
+            <input type="text" class="form-control" id="messageInput" placeholder="Type your message...">
+            <button class="btn btn-primary" id="sendButton">Send</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block right_panel %}
+<div class="card">
+    <div class="card-header">
+            Welcome
+    </div>
+        <div class="card-body">
+            <div class="list-group">
+                {{ request.user.username}}
+            </div>
+            
+        </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
@@ -61,17 +114,12 @@
         const wsUrl = wsProtocol + window.location.host + '/ws/chat/' + roomName + '/';
         console.log("Attempting to connect to:", wsUrl);
 
-        // chatSocket = new WebSocket(
-        //     protocol + window.location.host + '/ws/chat/' + roomName + '/'
-        // );
-
         try {
             chatSocket = new WebSocket(wsUrl);
             
             chatSocket.onopen = function(e) {
                 console.log('WebSocket connected successfully');
                 isConnecting = false;
-                // Your existing onopen code...
             };
             
             // Add error handling
@@ -95,7 +143,6 @@
                 'action': 'load_messages',
                 'selected_user': selectedUser
             }));
-            // Load old messages immediately after the WebSocket opens
             document.getElementById('chatMessages').innerHTML = ''; // Clear chat
         };
     
