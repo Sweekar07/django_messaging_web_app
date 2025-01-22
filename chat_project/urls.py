@@ -19,5 +19,6 @@ from django.urls import path, include
 
 urlpatterns = [
     path('', include('chat.urls')),  # This will include the chat app URLs
-    path('admin/', admin.site.urls),
+    path('admin/', include('admin_honeypot.urls', namespace='admin_honeypot')),
+    path('your_data/', admin.site.urls), # chaning the admin/ url with your_data/ for prod and security reasons 
 ]
